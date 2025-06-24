@@ -1,1 +1,0 @@
-# luit-june-2025-green-aws-ai
