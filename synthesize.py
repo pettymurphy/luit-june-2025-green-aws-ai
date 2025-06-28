@@ -28,3 +28,5 @@ with open('speech.mp3', 'wb') as file:
 s3.upload_file('speech.mp3', bucket_name, s3_key)
 
 print(f"Uploaded to s3://{bucket_name}/{s3_key}")
+
+# This is cool
