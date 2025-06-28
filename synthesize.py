@@ -1,7 +1,9 @@
 import boto3
+import os
 
-polly = boto3.client('polly')
-s3 = boto3.client('s3')
+region = os.environ['AWS_REGION']
+polly = boto3.client('polly', region_name=region)
+s3 = boto3.client('s3', region_name=region)
 
 #define file and bucket
 input_file = 'speech.txt'
