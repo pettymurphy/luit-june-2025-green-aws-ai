@@ -8,6 +8,11 @@ from decimal import Decimal
 s3 = boto3.client('s3')
 dynamodb = boto3.resource('dynamodb')
 
+<<<<<<< HEAD
+=======
+
+# Get AWS Region from environment
+>>>>>>> 7e7144935d2b7286ae0404f2f31020a7ef658478
 region = os.getenv("AWS_REGION")
 if not region:
     print("❌ AWS_REGION is not set in the environment.")
