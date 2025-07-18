@@ -3,6 +3,7 @@ import sys
 import os
 from datetime import datetime
 
+
 # Get AWS Region from environment
 region = os.getenv("AWS_REGION")
 if not region:
