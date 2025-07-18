@@ -2,18 +2,18 @@ import boto3
 import sys
 import os
 from datetime import datetime
+from decimal import Decimal
 
-# Get AWS Region from environment
+# Initialize AWS clients
+s3 = boto3.client('s3')
+dynamodb = boto3.resource('dynamodb')
+
 region = os.getenv("AWS_REGION")
 if not region:
     print("❌ AWS_REGION is not set in the environment.")
     sys.exit(1)
 
-# Initialize AWS clients
-s3 = boto3.client("s3", region_name=region)
 rekognition = boto3.client("rekognition", region_name=region)
-dynamodb = boto3.resource("dynamodb", region_name=region)
-
 
 # Read command-line arguments
 try:
@@ -25,57 +25,70 @@ except IndexError:
 
 # Validate image path
 if not os.path.exists(image_path):
-    print(f"[ERROR] File not found: {image_path}")
+    print(f"[ERROR] Image path '{image_path}' does not exist.")
     sys.exit(1)
 
-# Get environment variables
-try:
-    bucket_name = os.environ['S3_BUCKET']
-    table_name = os.environ['DYNAMODB_TABLE_BETA'] if 'beta' in branch.lower() else os.environ['DYNAMODB_TABLE_PROD']
-except KeyError as e:
-    print(f"[ERROR] Missing environment variable: {str(e)}")
+# Upload to S3
+bucket = os.getenv("S3_BUCKET")
+if not bucket:
+    print("❌ S3_BUCKET is not set in the environment.")
     sys.exit(1)
 
-# Generate filename and S3 path
-filename = os.path.basename(image_path)
-s3_key = f"rekognition-input/{filename}"
+image_name = os.path.basename(image_path)
+s3_key = f"rekognition-input/{image_name}"
 
-# Upload image to S3
 try:
-    s3.upload_file(image_path, bucket_name, s3_key)
-    print(f"[S3] Uploaded {filename} to s3://{bucket_name}/{s3_key}")
+    s3.upload_file(image_path, bucket, s3_key)
+    print(f"[S3] Uploaded {image_name} to s3://{bucket}/{s3_key}")
 except Exception as e:
-    print(f"[ERROR] Failed to upload image to S3: {str(e)}")
+    print(f"[ERROR] Failed to upload to S3: {e}")
     sys.exit(1)
 
-# Call Rekognition for label detection
+# Detect labels with Rekognition
 try:
     response = rekognition.detect_labels(
-        Image={'S3Object': {'Bucket': bucket_name, 'Name': s3_key}},
-        MaxLabels=10,
-        MinConfidence=75
+        Image={'S3Object': {'Bucket': bucket, 'Name': s3_key}},
+        MaxLabels=10
     )
-    labels = [
-        {"Name": label["Name"], "Confidence": round(label["Confidence"], 2)}
-        for label in response['Labels']
-    ]
+    labels = response['Labels']
     print(f"[Rekognition] Detected {len(labels)} label(s): {labels}")
 except Exception as e:
-    print(f"[ERROR] Rekognition failed: {str(e)}")
+    print(f"[ERROR] Rekognition failed: {e}")
     sys.exit(1)
 
-# Write results to DynamoDB
-try:
-    table = dynamodb.Table(table_name)
-    table.put_item(Item={
-        'filename': s3_key,
-        'labels': labels,
-        'timestamp': datetime.utcnow().isoformat() + 'Z',
-        'branch': branch
-    })
-    print(f"[DynamoDB] Successfully logged to table: {table_name}")
-except Exception as e:
-    print(f"[ERROR] Failed to write to DynamoDB: {str(e)}")
+# Convert confidence values to Decimal for DynamoDB
+for label in labels:
+    label['Confidence'] = Decimal(str(label['Confidence']))
+
+# Select DynamoDB table from environment
+table_name = os.getenv("DYNAMODB_TABLE_BETA") if branch == "rekognition-logging" else os.getenv("DYNAMODB_TABLE_PROD")
+if not table_name:
+    print(f"[ERROR] No DynamoDB table found for branch '{branch}'")
     sys.exit(1)
+
+table = dynamodb.Table(table_name)
+
+# Store results in DynamoDB
+timestamp = datetime.utcnow().isoformat()
+
+try:
+    table.put_item(
+        Item={
+            'Image': image_name,
+            'Timestamp': timestamp,
+            'Labels': [
+                {
+                    'Name': label['Name'],
+                    'Confidence': label['Confidence']
+                } for label in labels
+            ]
+        }
+    )
+    print(f"[DynamoDB] Results saved to {table_name}")
+except Exception as e:
+    print(f"❌ Error: Failed to write to DynamoDB: {e}")
+    sys.exit(1)
+
+
 
 
