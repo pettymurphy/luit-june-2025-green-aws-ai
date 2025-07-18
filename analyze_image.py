@@ -3,11 +3,17 @@ import sys
 import os
 from datetime import datetime
 
+# Get AWS Region from environment
+region = os.getenv("AWS_REGION")
+if not region:
+    print("❌ AWS_REGION is not set in the environment.")
+    sys.exit(1)
+
 # Initialize AWS clients
-s3 = boto3.client('s3')
-rekognition = boto3.client('rekognition', region_name=os.environ['AWS_REGION'])
-#rekognition = boto3.client('rekognition')
-dynamodb = boto3.resource('dynamodb')
+s3 = boto3.client("s3", region_name=region)
+rekognition = boto3.client("rekognition", region_name=region)
+dynamodb = boto3.resource("dynamodb", region_name=region)
+
 
 # Read command-line arguments
 try:
