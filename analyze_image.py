@@ -74,7 +74,7 @@ timestamp = datetime.utcnow().isoformat()
 try:
     table.put_item(
         Item={
-            'Image': image_name,
+            'filename': image_name,
             'Timestamp': timestamp,
             'Labels': [
                 {
