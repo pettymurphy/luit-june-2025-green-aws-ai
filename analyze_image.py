@@ -5,7 +5,8 @@ from datetime import datetime
 
 # Initialize AWS clients
 s3 = boto3.client('s3')
-rekognition = boto3.client('rekognition')
+rekognition = boto3.client('rekognition', region_name=os.environ['AWS_REGION'])
+#rekognition = boto3.client('rekognition')
 dynamodb = boto3.resource('dynamodb')
 
 # Read command-line arguments
