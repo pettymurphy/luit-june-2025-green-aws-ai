@@ -8,11 +8,7 @@ from decimal import Decimal
 s3 = boto3.client('s3')
 dynamodb = boto3.resource('dynamodb')
 
-<<<<<<< HEAD
-=======
-
 # Get AWS Region from environment
->>>>>>> 7e7144935d2b7286ae0404f2f31020a7ef658478
 region = os.getenv("AWS_REGION")
 if not region:
     print("❌ AWS_REGION is not set in the environment.")
@@ -65,17 +61,16 @@ except Exception as e:
 for label in labels:
     label['Confidence'] = Decimal(str(label['Confidence']))
 
-# Select DynamoDB table from environment
+# Select DynamoDB table based on branch
 table_name = os.getenv("DYNAMODB_TABLE_BETA") if branch == "rekognition-logging" else os.getenv("DYNAMODB_TABLE_PROD")
 if not table_name:
     print(f"[ERROR] No DynamoDB table found for branch '{branch}'")
     sys.exit(1)
 
 table = dynamodb.Table(table_name)
-
-# Store results in DynamoDB
 timestamp = datetime.utcnow().isoformat()
 
+# Store results in DynamoDB
 try:
     table.put_item(
         Item={
@@ -93,7 +88,3 @@ try:
 except Exception as e:
     print(f"❌ Error: Failed to write to DynamoDB: {e}")
     sys.exit(1)
-
-
-
-
