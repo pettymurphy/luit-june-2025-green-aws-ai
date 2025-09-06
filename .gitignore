@@ -192,3 +192,26 @@ cython_debug/
 #  refer to https://docs.cursor.com/context/ignore-files
 .cursorignore
 .cursorindexingignore
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+terraform.rc
+.terraformrc
+
+# Local variables / secrets
+*.tfvars
+terraform.tfvars
+*.pem
+
+# OS/editor
+.DS_Store
+Thumbs.db
+.vscode/
